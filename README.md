@@ -1,6 +1,8 @@
-# go-ninjam
+# go ninjam, go ninjam, go!
 
-A [NINJAM][] client for Go.
+A [NINJAM][] client for Go. Programatically access your NINJAM server
+to write chat messages, change the topic/BPM/BPI, and kick users that
+are misbehaving.
 
 ## Usage
 

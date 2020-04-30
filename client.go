@@ -35,7 +35,7 @@ func prepend(x []byte, y byte) []byte {
 }
 
 // Send socket data over the TCP socket to NINJAM
-func (c *Client) Send(method byte, arguments []byte) int {
+func (c *Client) Send(method byte, arguments []byte) error {
 	var d net.Dialer
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -52,14 +52,18 @@ func (c *Client) Send(method byte, arguments []byte) int {
 	response, err := conn.Write(payload)
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	return response
+	if response != 0 {
+		return &CommandFailed{Code: response}
+	}
+
+	return nil
 }
 
 // Chat sends a message to the chat
-func (c *Client) Chat(message string) int {
+func (c *Client) Chat(message string) error {
 	return c.Send(MESSAGE_CHAT_MESSAGE, []byte(message))
 }
 
@@ -72,40 +76,40 @@ func combine(slice []byte, addition string) []byte {
 }
 
 // Topic updates the topic in the server
-func (c *Client) Topic(text string) int {
+func (c *Client) Topic(text string) error {
 	var args []byte
 
-	args = combine(args, "TOPIC")
+	args = combine(args, "TOPIC ")
 	args = combine(args, text)
 
-	return c.Send(MESSAGE_CLIENT_SET_CHANNEL_INFO, args)
+	return c.Send(MESSAGE_CHAT_MESSAGE, args)
 }
 
 // Kick a user from the server
-func (c *Client) Kick(user string) int {
+func (c *Client) Kick(user string) error {
 	var args []byte
 
 	args = combine(args, user)
-	args = combine(args, "K")
+	args = combine(args, " K")
 
 	return c.Send(MESSAGE_CLIENT_SET_USERMASK, args)
 }
 
 // BPM sets the current tempo of the channel on the next loop
-func (c *Client) BPM(bpm int) int {
+func (c *Client) BPM(bpm int) error {
 	var args []byte
 
-	args = combine(args, "BPM")
+	args = combine(args, "BPM ")
 	args = combine(args, strconv.Itoa(bpm))
 
 	return c.Send(MESSAGE_CLIENT_SET_CHANNEL_INFO, args)
 }
 
 // BPI sets the amount of beats in each interval on the next loop
-func (c *Client) BPI(bpi int) int {
+func (c *Client) BPI(bpi int) error {
 	var args []byte
 
-	args = combine(args, "BPI")
+	args = combine(args, "BPI ")
 	args = combine(args, strconv.Itoa(bpi))
 
 	return c.Send(MESSAGE_CLIENT_SET_CHANNEL_INFO, args)
@@ -119,11 +123,5 @@ func (c *Client) Authorize(password string) error {
 	args = combine(args, " ")
 	args = combine(args, password)
 
-	code := c.Send(MESSAGE_CLIENT_AUTH_USER, args)
-
-	if code > 0 {
-		return &AuthorizationFailed{User: c.User}
-	}
-
-	return nil
+	return c.Send(MESSAGE_CLIENT_AUTH_USER, args)
 }

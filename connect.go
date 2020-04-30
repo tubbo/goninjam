@@ -5,15 +5,18 @@ import "fmt"
 // Connect establishes a connection with the NINJAM server over TCP. It
 // requires a username and password to log in. You can also use
 // ConnectAnonymously to refrain from providing a password.
-func Connect(host string, username string, password string) Client {
-	client := Client{Host: host, User: username}
-	err := client.Authorize(password)
+func Connect(host string, username string, password string) (Client, error) {
+	var err error
+	var client Client
 
-	if err != nil {
-		panic(err)
+	if password == "" {
+		return ConnectAnonymously(host, username), nil
 	}
 
-	return client
+	client = Client{Host: host, User: username}
+	err = client.Authorize(password)
+
+	return client, err
 }
 
 // ConnectAnonymously works just like Connect, but does not include a
